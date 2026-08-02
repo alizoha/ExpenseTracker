@@ -9,70 +9,83 @@ struct ContentView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack {
-                // Total Amount Card
+        TabView {
+            NavigationView {
                 VStack {
-                    Text("Total Spent")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    
-                    Text("$\(String(format: "%.2f", totalSpent))")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.blue)
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-                .padding()
-                
-                // Expenses List
-                if expenses.isEmpty {
                     VStack {
-                        Text("No expenses yet")
-                            .foregroundColor(.gray)
-                        Text("Tap + to add your first expense")
+                        Text("Total Spent")
                             .font(.caption)
                             .foregroundColor(.gray)
+                        
+                        Text("$\(String(format: "%.2f", totalSpent))")
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(.blue)
                     }
-                    .frame(maxHeight: .infinity, alignment: .center)
-                } else {
-                    List {
-                        ForEach(expenses) { expense in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(expense.category)
-                                        .font(.headline)
-                                    Text(expense.date.formatted(date: .abbreviated, time: .omitted))
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                                Spacer()
-                                Text("$\(String(format: "%.2f", expense.amount))")
-                                    .font(.headline)
-                            }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding()
+                    
+                    if expenses.isEmpty {
+                        VStack {
+                            Text("No expenses yet")
+                                .foregroundColor(.gray)
+                            Text("Tap + to add your first expense")
+                                .font(.caption)
+                                .foregroundColor(.gray)
                         }
-                        .onDelete(perform: deleteExpense)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                    } else {
+                        List {
+                            ForEach(expenses) { expense in
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(expense.category)
+                                            .font(.headline)
+                                        Text(expense.date.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                    Spacer()
+                                    Text("$\(String(format: "%.2f", expense.amount))")
+                                        .font(.headline)
+                                }
+                            }
+                            .onDelete(perform: deleteExpense)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .navigationTitle("Expense Tracker")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { showingAddExpense = true }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 24))
+                        }
                     }
                 }
-                
-                Spacer()
-            }
-            .navigationTitle("Expense Tracker")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddExpense = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 24))
-                    }
+                .sheet(isPresented: $showingAddExpense) {
+                    AddExpenseView(expenses: $expenses, isPresented: $showingAddExpense)
+                }
+                .onAppear {
+                    loadExpenses()
                 }
             }
-            .sheet(isPresented: $showingAddExpense) {
-                AddExpenseView(expenses: $expenses, isPresented: $showingAddExpense)
+            .tabItem {
+                Image(systemName: "list.bullet")
+                Text("Expenses")
             }
-            .onAppear {
-                loadExpenses()
+            
+            NavigationView {
+                AnalyticsView(expenses: expenses)
+                    .navigationTitle("Analytics")
+            }
+            .tabItem {
+                Image(systemName: "chart.pie")
+                Text("Analytics")
             }
         }
     }
