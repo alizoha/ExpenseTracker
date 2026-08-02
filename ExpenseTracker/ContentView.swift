@@ -40,7 +40,7 @@ struct ContentView: View {
     }
     
     var categories: [String] {
-        var cats = Set(expenses.map { $0.category })
+        let cats = Set(expenses.map { $0.category })
         return ["All"] + cats.sorted()
     }
     
@@ -54,14 +54,17 @@ struct ContentView: View {
                             .foregroundColor(.gray)
                         
                         Text("$\(String(format: "%.2f", totalSpent))")
-                            .font(.system(size: 32, weight: .bold))
+                            .font(.system(size: 36, weight: .bold))
                             .foregroundColor(.blue)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemGray6))
+                    .background(
+                        LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.cyan.opacity(0.1)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
                     .cornerRadius(12)
                     .padding()
+                    .transition(.scale.combined(with: .opacity))
                     
                     VStack(spacing: 12) {
                         HStack {
@@ -75,6 +78,7 @@ struct ContentView: View {
                         HStack {
                             Text("Category:")
                                 .font(.subheadline)
+                                .fontWeight(.semibold)
                             Picker("Category", selection: $selectedCategory) {
                                 ForEach(categories, id: \.self) { category in
                                     Text(category).tag(category)
@@ -87,6 +91,7 @@ struct ContentView: View {
                         HStack {
                             Text("Sort:")
                                 .font(.subheadline)
+                                .fontWeight(.semibold)
                             Picker("Sort", selection: $sortOption) {
                                 Text("Date").tag("Date")
                                 Text("Amount (High to Low)").tag("Amount (High to Low)")
@@ -98,34 +103,52 @@ struct ContentView: View {
                         .padding(.horizontal)
                     }
                     .padding(.vertical, 8)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
                     
                     if filteredExpenses.isEmpty {
-                        VStack {
-                            Text("No expenses found")
+                        VStack(spacing: 16) {
+                            Image(systemName: "list.bullet.rectangle")
+                                .font(.system(size: 48))
                                 .foregroundColor(.gray)
-                            Text("Try adjusting your filters")
+                            Text("No expenses found")
+                                .font(.headline)
+                                .foregroundColor(.gray)
+                            Text("Try adjusting your filters or add a new expense")
                                 .font(.caption)
                                 .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
                         }
                         .frame(maxHeight: .infinity, alignment: .center)
+                        .transition(.opacity)
                     } else {
                         List {
                             ForEach(filteredExpenses) { expense in
                                 HStack {
-                                    VStack(alignment: .leading) {
+                                    VStack(alignment: .leading, spacing: 4) {
                                         Text(expense.category)
                                             .font(.headline)
+                                            .fontWeight(.semibold)
                                         Text(expense.date.formatted(date: .abbreviated, time: .omitted))
                                             .font(.caption)
                                             .foregroundColor(.gray)
                                     }
                                     Spacer()
-                                    Text("$\(String(format: "%.2f", expense.amount))")
-                                        .font(.headline)
+                                    VStack(alignment: .trailing, spacing: 4) {
+                                        Text("$\(String(format: "%.2f", expense.amount))")
+                                            .font(.headline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.blue)
+                                    }
                                 }
+                                .padding(.vertical, 4)
+                                .transition(.scale.combined(with: .opacity))
                             }
                             .onDelete(perform: deleteExpense)
                         }
+                        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: filteredExpenses.count)
                     }
                     
                     Spacer()
@@ -136,6 +159,7 @@ struct ContentView: View {
                         Button(action: { showingAddExpense = true }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 24))
+                                .foregroundColor(.blue)
                         }
                     }
                 }
