@@ -7,6 +7,7 @@ struct AddExpenseView: View {
     @State private var amount: String = ""
     @State private var category: String = "Food"
     @State private var date: Date = Date()
+    @State private var notes: String = ""
     
     let categories = ["Food", "Transport", "Entertainment", "Shopping", "Other"]
     
@@ -30,20 +31,24 @@ struct AddExpenseView: View {
                 Section(header: Text("Date")) {
                     DatePicker("Select date", selection: $date, displayedComponents: .date)
                 }
+                
+                Section(header: Text("Notes (Optional)")) {
+                    TextEditor(text: $notes)
+                        .frame(height: 100)
+                        .placeholder(when: notes.isEmpty) {
+                            Text("Add description or details about this expense...")
+                                .foregroundColor(.gray)
+                        }
+                }
             }
             .navigationTitle("Add Expense")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
+                    Button("Cancel") { isPresented = false }
                 }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveExpense()
-                    }
-                    .disabled(amount.isEmpty)
+                    Button("Save") { saveExpense() }
+                        .disabled(amount.isEmpty)
                 }
             }
         }
@@ -51,15 +56,9 @@ struct AddExpenseView: View {
     
     private func saveExpense() {
         guard let amountDouble = Double(amount) else { return }
-        
-        let newExpense = Expense(
-            amount: amountDouble,
-            category: category,
-            date: date
-        )
-        
+        let newExpense = Expense(amount: amountDouble, category: category, date: date, notes: notes)
         expenses.append(newExpense)
-        // Save to device
+        
         if let encoded = try? JSONEncoder().encode(expenses) {
             UserDefaults.standard.set(encoded, forKey: "expenses")
         }
@@ -67,9 +66,17 @@ struct AddExpenseView: View {
     }
 }
 
+extension View {
+    func placeholder<Content: View>(when shouldShow: Bool, alignment: Alignment = .leading, @ViewBuilder placeholder: () -> Content) -> some View {
+        ZStack(alignment: alignment) {
+            placeholder().opacity(shouldShow ? 1 : 0)
+            self
+        }
+    }
+}
+
 #Preview {
     @State var expenses: [Expense] = []
     @State var isPresented = true
-    
     return AddExpenseView(expenses: $expenses, isPresented: $isPresented)
 }

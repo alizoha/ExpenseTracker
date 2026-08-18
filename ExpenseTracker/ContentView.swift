@@ -6,9 +6,33 @@ struct ContentView: View {
     @State private var searchText: String = ""
     @State private var selectedCategory: String = "All"
     @State private var sortOption: String = "Date"
+    @State private var monthlyBudget: Double = 0
+    @State private var showBudgetAlert = false
+    @State private var selectedDateRange: String = "All Time"
+    @State private var startDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var endDate: Date = Date()
     
     var totalSpent: Double {
         expenses.reduce(0) { $0 + $1.amount }
+    }
+    
+    var currentMonthSpent: Double {
+        let calendar = Calendar.current
+        let now = Date()
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)!
+        
+        return expenses.filter { $0.date >= monthStart && $0.date < monthEnd }.reduce(0) { $0 + $1.amount }
+    }
+    
+    var budgetProgress: Double {
+        guard monthlyBudget > 0 else { return 0 }
+        return min(currentMonthSpent / monthlyBudget, 1.0)
+    }
+    
+    var budgetPercentage: String {
+        guard monthlyBudget > 0 else { return "0" }
+        return String(format: "%.0f", budgetProgress * 100)
     }
     
     var filteredExpenses: [Expense] {
@@ -17,7 +41,8 @@ struct ContentView: View {
         if !searchText.isEmpty {
             result = result.filter { expense in
                 expense.category.localizedCaseInsensitiveContains(searchText) ||
-                String(format: "%.2f", expense.amount).contains(searchText)
+                String(format: "%.2f", expense.amount).contains(searchText) ||
+                expense.notes.localizedCaseInsensitiveContains(searchText)
             }
         }
         
@@ -25,6 +50,26 @@ struct ContentView: View {
             result = result.filter { $0.category == selectedCategory }
         }
         
+        // Date Range Filter
+        switch selectedDateRange {
+        case "This Week":
+            let calendar = Calendar.current
+            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date()))!
+            result = result.filter { $0.date >= weekStart }
+        case "This Month":
+            let calendar = Calendar.current
+            let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: Date()))!
+            result = result.filter { $0.date >= monthStart }
+        case "Last 30 Days":
+            let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date())!
+            result = result.filter { $0.date >= thirtyDaysAgo }
+        case "Custom Range":
+            result = result.filter { $0.date >= startDate && $0.date <= endDate }
+        default: // All Time
+            break
+        }
+        
+        // Sort
         switch sortOption {
         case "Amount (High to Low)":
             result.sort { $0.amount > $1.amount }
@@ -32,7 +77,7 @@ struct ContentView: View {
             result.sort { $0.amount < $1.amount }
         case "Category":
             result.sort { $0.category < $1.category }
-        default:
+        default: // Date
             result.sort { $0.date > $1.date }
         }
         
@@ -40,14 +85,74 @@ struct ContentView: View {
     }
     
     var categories: [String] {
-        let cats = Set(expenses.map { $0.category })
+        var cats = Set(expenses.map { $0.category })
         return ["All"] + cats.sorted()
+    }
+    
+    // Monthly Summary Data
+    var monthlyData: [(month: String, amount: Double)] {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM"
+        
+        var monthlyDict: [String: Double] = [:]
+        
+        for expense in expenses {
+            let monthKey = dateFormatter.string(from: expense.date)
+            monthlyDict[monthKey, default: 0] += expense.amount
+        }
+        
+        let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        return months.compactMap { month in
+            if let amount = monthlyDict[month] {
+                return (month, amount)
+            }
+            return nil
+        }
     }
     
     var body: some View {
         TabView {
             NavigationView {
                 VStack {
+                    // Budget Tracking Card
+                    if monthlyBudget > 0 {
+                        VStack(spacing: 12) {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text("Monthly Budget")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                    Text("$\(String(format: "%.2f", currentMonthSpent)) / $\(String(format: "%.2f", monthlyBudget))")
+                                        .font(.headline)
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing) {
+                                    Text("\(budgetPercentage)%")
+                                        .font(.headline)
+                                        .foregroundColor(budgetProgress > 1.0 ? .red : .blue)
+                                }
+                            }
+                            
+                            ProgressView(value: budgetProgress)
+                                .tint(budgetProgress > 1.0 ? .red : .blue)
+                            
+                            if currentMonthSpent > monthlyBudget {
+                                HStack {
+                                    Image(systemName: "exclamationmark.circle.fill")
+                                        .foregroundColor(.red)
+                                    Text("Over budget by $\(String(format: "%.2f", currentMonthSpent - monthlyBudget))")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .padding()
+                    }
+                    
+                    // Total Spent Card
                     VStack {
                         Text("Total Spent")
                             .font(.caption)
@@ -66,6 +171,25 @@ struct ContentView: View {
                     .padding()
                     .transition(.scale.combined(with: .opacity))
                     
+                    // Budget Input
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("Set Monthly Budget:")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Spacer()
+                        }
+                        HStack {
+                            Text("$")
+                                .foregroundColor(.gray)
+                            TextField("Enter budget amount", value: $monthlyBudget, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .keyboardType(.decimalPad)
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    // Search, Filter, Sort
                     VStack(spacing: 12) {
                         HStack {
                             Image(systemName: "magnifyingglass")
@@ -89,6 +213,29 @@ struct ContentView: View {
                         .padding(.horizontal)
                         
                         HStack {
+                            Text("Date Range:")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Picker("Date Range", selection: $selectedDateRange) {
+                                Text("All Time").tag("All Time")
+                                Text("This Week").tag("This Week")
+                                Text("This Month").tag("This Month")
+                                Text("Last 30 Days").tag("Last 30 Days")
+                                Text("Custom").tag("Custom Range")
+                            }
+                            .pickerStyle(.menu)
+                        }
+                        .padding(.horizontal)
+                        
+                        if selectedDateRange == "Custom Range" {
+                            VStack(spacing: 8) {
+                                DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
+                                DatePicker("End Date", selection: $endDate, displayedComponents: .date)
+                            }
+                            .padding(.horizontal)
+                        }
+                        
+                        HStack {
                             Text("Sort:")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
@@ -107,6 +254,7 @@ struct ContentView: View {
                     .cornerRadius(10)
                     .padding(.horizontal)
                     
+                    // Expenses List
                     if filteredExpenses.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "list.bullet.rectangle")
@@ -126,21 +274,30 @@ struct ContentView: View {
                     } else {
                         List {
                             ForEach(filteredExpenses) { expense in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(expense.category)
-                                            .font(.headline)
-                                            .fontWeight(.semibold)
-                                        Text(expense.date.formatted(date: .abbreviated, time: .omitted))
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(expense.category)
+                                                .font(.headline)
+                                                .fontWeight(.semibold)
+                                            Text(expense.date.formatted(date: .abbreviated, time: .omitted))
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                        }
+                                        Spacer()
+                                        VStack(alignment: .trailing, spacing: 4) {
+                                            Text("$\(String(format: "%.2f", expense.amount))")
+                                                .font(.headline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                    
+                                    if !expense.notes.isEmpty {
+                                        Text(expense.notes)
                                             .font(.caption)
                                             .foregroundColor(.gray)
-                                    }
-                                    Spacer()
-                                    VStack(alignment: .trailing, spacing: 4) {
-                                        Text("$\(String(format: "%.2f", expense.amount))")
-                                            .font(.headline)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.blue)
+                                            .lineLimit(2)
                                     }
                                 }
                                 .padding(.vertical, 4)
@@ -173,6 +330,44 @@ struct ContentView: View {
             .tabItem {
                 Image(systemName: "list.bullet")
                 Text("Expenses")
+            }
+            
+            // Monthly Summary Tab
+            NavigationView {
+                VStack {
+                    Text("Monthly Summary")
+                        .font(.headline)
+                        .padding()
+                    
+                    if monthlyData.isEmpty {
+                        VStack {
+                            Text("No data yet")
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxHeight: .infinity, alignment: .center)
+                    } else {
+                        List {
+                            ForEach(monthlyData, id: \.month) { data in
+                                HStack {
+                                    Text(data.month)
+                                        .font(.headline)
+                                    Spacer()
+                                    VStack(alignment: .trailing) {
+                                        Text("$\(String(format: "%.2f", data.amount))")
+                                            .fontWeight(.semibold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .navigationTitle("Monthly Summary")
+            }
+            .tabItem {
+                Image(systemName: "calendar")
+                Text("Monthly")
             }
             
             NavigationView {
