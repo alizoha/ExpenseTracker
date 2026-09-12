@@ -2,12 +2,12 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var showingAddExpense = false
+    @State private var showingReceiptScanner = false
     @State private var expenses: [Expense] = []
     @State private var searchText: String = ""
     @State private var selectedCategory: String = "All"
     @State private var sortOption: String = "Date"
     @State private var monthlyBudget: Double = 0
-    @State private var showBudgetAlert = false
     @State private var selectedDateRange: String = "All Time"
     @State private var startDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var endDate: Date = Date()
@@ -50,7 +50,6 @@ struct ContentView: View {
             result = result.filter { $0.category == selectedCategory }
         }
         
-        // Date Range Filter
         switch selectedDateRange {
         case "This Week":
             let calendar = Calendar.current
@@ -65,11 +64,10 @@ struct ContentView: View {
             result = result.filter { $0.date >= thirtyDaysAgo }
         case "Custom Range":
             result = result.filter { $0.date >= startDate && $0.date <= endDate }
-        default: // All Time
+        default:
             break
         }
         
-        // Sort
         switch sortOption {
         case "Amount (High to Low)":
             result.sort { $0.amount > $1.amount }
@@ -77,7 +75,7 @@ struct ContentView: View {
             result.sort { $0.amount < $1.amount }
         case "Category":
             result.sort { $0.category < $1.category }
-        default: // Date
+        default:
             result.sort { $0.date > $1.date }
         }
         
@@ -89,7 +87,6 @@ struct ContentView: View {
         return ["All"] + cats.sorted()
     }
     
-    // Monthly Summary Data
     var monthlyData: [(month: String, amount: Double)] {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMM"
@@ -114,7 +111,6 @@ struct ContentView: View {
         TabView {
             NavigationView {
                 VStack {
-                    // Budget Tracking Card
                     if monthlyBudget > 0 {
                         VStack(spacing: 12) {
                             HStack {
@@ -152,7 +148,6 @@ struct ContentView: View {
                         .padding()
                     }
                     
-                    // Total Spent Card
                     VStack {
                         Text("Total Spent")
                             .font(.caption)
@@ -171,7 +166,6 @@ struct ContentView: View {
                     .padding()
                     .transition(.scale.combined(with: .opacity))
                     
-                    // Budget Input
                     VStack(spacing: 8) {
                         HStack {
                             Text("Set Monthly Budget:")
@@ -189,7 +183,6 @@ struct ContentView: View {
                     }
                     .padding(.horizontal)
                     
-                    // Search, Filter, Sort
                     VStack(spacing: 12) {
                         HStack {
                             Image(systemName: "magnifyingglass")
@@ -254,7 +247,6 @@ struct ContentView: View {
                     .cornerRadius(10)
                     .padding(.horizontal)
                     
-                    // Expenses List
                     if filteredExpenses.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "list.bullet.rectangle")
@@ -277,9 +269,17 @@ struct ContentView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Text(expense.category)
-                                                .font(.headline)
-                                                .fontWeight(.semibold)
+                                            HStack {
+                                                Text(expense.category)
+                                                    .font(.headline)
+                                                    .fontWeight(.semibold)
+                                                
+                                                if expense.isFromReceipt {
+                                                    Image(systemName: "receipt.fill")
+                                                        .font(.caption)
+                                                        .foregroundColor(.blue)
+                                                }
+                                            }
                                             Text(expense.date.formatted(date: .abbreviated, time: .omitted))
                                                 .font(.caption)
                                                 .foregroundColor(.gray)
@@ -312,7 +312,12 @@ struct ContentView: View {
                 }
                 .navigationTitle("Expense Tracker")
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                        Button(action: { showingReceiptScanner = true }) {
+                            Image(systemName: "camera.fill")
+                                .foregroundColor(.blue)
+                        }
+                        
                         Button(action: { showingAddExpense = true }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 24))
@@ -323,6 +328,9 @@ struct ContentView: View {
                 .sheet(isPresented: $showingAddExpense) {
                     AddExpenseView(expenses: $expenses, isPresented: $showingAddExpense)
                 }
+                .sheet(isPresented: $showingReceiptScanner) {
+                    ReceiptScannerIntegrationView(expenses: $expenses, isPresented: $showingReceiptScanner)
+                }
                 .onAppear {
                     loadExpenses()
                 }
@@ -332,7 +340,6 @@ struct ContentView: View {
                 Text("Expenses")
             }
             
-            // Monthly Summary Tab
             NavigationView {
                 VStack {
                     Text("Monthly Summary")

@@ -6,13 +6,33 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C40DEFB530556931008091C8 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C40DEFB430556931008091C8 /* Vision.framework */; };
+		C40DEFB730556942008091C8 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C40DEFB630556942008091C8 /* AVFoundation.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		C40DEFB430556931008091C8 /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
+		C40DEFB630556942008091C8 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		C41B6F5D301E1FF700573043 /* ExpenseTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExpenseTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C40DEFB930556B6B008091C8 /* Exceptions for "ExpenseTracker" folder in "ExpenseTracker" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C41B6F5C301E1FF700573043 /* ExpenseTracker */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C41B6F5F301E1FF700573043 /* ExpenseTracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C40DEFB930556B6B008091C8 /* Exceptions for "ExpenseTracker" folder in "ExpenseTracker" target */,
+			);
 			path = ExpenseTracker;
 			sourceTree = "<group>";
 		};
@@ -23,16 +43,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C40DEFB730556942008091C8 /* AVFoundation.framework in Frameworks */,
+				C40DEFB530556931008091C8 /* Vision.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C40DEFB330556931008091C8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C40DEFB630556942008091C8 /* AVFoundation.framework */,
+				C40DEFB430556931008091C8 /* Vision.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		C41B6F54301E1FF700573043 = {
 			isa = PBXGroup;
 			children = (
 				C41B6F5F301E1FF700573043 /* ExpenseTracker */,
+				C40DEFB330556931008091C8 /* Frameworks */,
 				C41B6F5E301E1FF700573043 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -253,6 +285,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExpenseTracker/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan receipts";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photos to upload receipt images";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +319,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExpenseTracker/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan receipts";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photos to upload receipt images";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
